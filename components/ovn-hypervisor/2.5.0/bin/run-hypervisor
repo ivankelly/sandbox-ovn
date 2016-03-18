@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+SOUTHBOUND_IP=$(cat /etc/hosts | awk '/southbounddb/ { print $1; exit }')
+LOCAL_IP=$(ip a show dev eth0 | awk '/    inet / { gsub("/.*", "", $2); print $2 }')
+SYSTEM_UUID=$(uuidgen)
+
+echo $SYSTEM_UUID > /system-id.txt
+
+ovsdb-tool create /ovsdb-local.db /usr/share/openvswitch/vswitch.ovsschema
+ovsdb-server --detach --remote=punix:/ovsdb-local.sock /ovsdb-local.db
+
+ovs-vsctl --db=unix:/ovsdb-local.sock --no-wait -- init
+
+ovs-vswitchd --detach unix:/ovsdb-local.sock
+
+ovs-vsctl --db=unix:/ovsdb-local.sock set open . external-ids:system-id=$SYSTEM_UUID
+ovs-vsctl --db=unix:/ovsdb-local.sock set open . external-ids:ovn-remote=tcp:$SOUTHBOUND_IP:1234
+ovs-vsctl --db=unix:/ovsdb-local.sock set open . external-ids:ovn-encap-type=geneve
+ovs-vsctl --db=unix:/ovsdb-local.sock set open . external-ids:ovn-encap-ip=$LOCAL_IP
+
+pkill ovs-vswitchd
+pkill ovsdb-server
+
+exec /usr/bin/supervisord -c /supervisord.conf

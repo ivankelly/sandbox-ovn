@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+SOUTHBOUND_IP=$(cat /etc/hosts | awk '/southbounddb/ { print $1; exit }')
+NORTHBOUND_IP=$(cat /etc/hosts | awk '/northbounddb/ { print $1; exit }')
+ovn-northd --ovnnb-db=tcp:$NORTHBOUND_IP:1234 --ovnsb-db=tcp:$SOUTHBOUND_IP:1234

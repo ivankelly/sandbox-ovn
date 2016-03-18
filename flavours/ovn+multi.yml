@@ -1,0 +1,35 @@
+southbounddb:
+  image: sandbox/ovn-southbounddb:2.5.0
+  hostname: southbounddb
+
+northbounddb:
+  image: sandbox/ovn-northbounddb:2.5.0
+  hostname: northbounddb
+
+northd:
+  image: sandbox/ovn-northd:2.5.0
+  hostname: northd
+  links:
+    - northbounddb
+    - southbounddb
+
+hypervisor1:
+  image: sandbox/ovn-hypervisor:2.5.0
+  hostname: hypervisor1
+  privileged: true
+  links:
+    - southbounddb
+
+hypervisor2:
+  image: sandbox/ovn-hypervisor:2.5.0
+  hostname: hypervisor2
+  privileged: true
+  links:
+    - southbounddb
+
+hypervisor3:
+  image: sandbox/ovn-hypervisor:2.5.0
+  hostname: hypervisor3
+  privileged: true
+  links:
+    - southbounddb
