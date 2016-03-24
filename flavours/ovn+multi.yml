@@ -33,3 +33,21 @@ hypervisor3:
   privileged: true
   links:
     - southbounddb
+
+keystone:
+  image: sandbox/keystone-ovn:mitaka
+  hostname: keystone
+
+mariadb:
+  image: mariadb:5.5
+  hostname: mariadb
+  environment:
+  - MYSQL_ROOT_PASSWORD=root
+
+neutron:
+  image: sandbox/neutron-ovn:mitaka
+  hostname: neutron
+  links:
+  - "keystone:keystone"
+  - "northbounddb:northbounddb"
+  - "mariadb:mariadb"
