@@ -10,6 +10,14 @@ curl https://get.docker.com/ | sudo sh
 pip install git+https://github.com/midonet/midonet-sandbox.git
 ```
 
+# Install the 2.5.0 kernel module
+
+```
+sudo dpkg -i ./packages/openvswitch-datapath-dkms_2.5.0-1_all.deb
+sudo rmmod openvswitch # remove the dependencies until you can remove it
+sudo modprobe vport_geneve
+```
+
 # Running the flavour
 
 ```
@@ -31,17 +39,18 @@ root@northbounddb:/# ovn-nbctl lport-set-port-security sw0-port1 00:00:00:00:00:
 root@northbounddb:/# ovn-nbctl lport-set-port-security sw0-port2 00:00:00:00:00:02
 ```
 
-2. Create 2 namespaces on hypervisor1.
+2. Create a port and bind it on hypervisor1.
 ```
 $ docker exec -it mnsandboxtest_hypervisor1_1 bash
 root@hypervisor1:/# create_veth_pair -n port1 -i 10.0.0.1/24 -m 00:00:00:00:00:01
-root@hypervisor1:/# create_veth_pair -n port2 -i 10.0.0.2/24 -m 00:00:00:00:00:02
+root@hypervisor1:/# ovs-vsctl --db=unix:/ovsdb-local.sock add-port br-int port1dp -- set Interface port1dp external_ids:iface-id=sw0-port1
 ```
 
-3. Bind the ports to OVN.
+3. Create a port and bind it on hypervisor2.
 ```
-root@hypervisor1:/# ovs-vsctl --db=unix:/ovsdb-local.sock add-port br-int port1dp -- set Interface port1dp external_ids:iface-id=sw0-port1
-root@hypervisor1:/# ovs-vsctl --db=unix:/ovsdb-local.sock add-port br-int port2dp -- set Interface port2dp external_ids:iface-id=sw0-port2
+$ docker exec -it mnsandboxtest_hypervisor2_1 bash
+root@hypervisor2:/# create_veth_pair -n port2 -i 10.0.0.2/24 -m 00:00:00:00:00:02
+root@hypervisor2:/# ovs-vsctl --db=unix:/ovsdb-local.sock add-port br-int port2dp -- set Interface port2dp external_ids:iface-id=sw0-port2
 ```
 
 4. Ping between the ports.
@@ -57,6 +66,4 @@ round-trip min/avg/max/stddev = 0.052/0.325/0.597/0.273 ms
 
 # TODO
 
-* I've only managed to get traffic working on a single hypervisor so
-  far. Next step is to get multiple hypervisors working.
 * Set up neutron image, so that we don't have to use nbctl directly.
